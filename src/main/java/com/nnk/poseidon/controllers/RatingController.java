@@ -2,7 +2,10 @@ package com.nnk.poseidon.controllers;
 
 
 import com.nnk.poseidon.domain.Rating;
+import com.nnk.poseidon.domain.Trade;
+import com.nnk.poseidon.services.RatingService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -11,16 +14,35 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.Collections;
+import java.util.List;
 
-
+@Slf4j
 @Controller
 public class RatingController {
-    // TODO: Inject Rating service
+
+    private final RatingService ratingService;
+    public RatingController(RatingService ratingService) {
+        this.ratingService = ratingService;
+    }
 
     @RequestMapping("/rating/list")
     public String home(Model model)
     {
-        // TODO: find all Rating, add to model
+        log.debug("Accès à la liste des ratings");
+
+        List<Rating> ratings = Collections.emptyList();
+
+        try {
+            ratings = ratingService.getAllRatings();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des ratings : {}", e.getMessage());
+            model.addAttribute("error", "Erreur lors de la récupération des ratings");
+        }
+
+        log.debug("Nombre de ratings récupérés : {}", ratings.size());
+        model.addAttribute("ratings", ratings);
+        log.debug("Modèle mis à jour avec les ratings");
         return "rating/list";
     }
 
