@@ -24,4 +24,12 @@ public class RatingService {
         log.debug("Number of ratings fetched: {}", ratings.size());
         return ratings;
     }
+
+    @Transactional
+    public Rating saveRating(Rating rating) {
+        log.debug("Saving rating: {}", rating);
+        Rating savedRating = ratingRepository.save(rating);
+        log.debug("Rating saved with ID: {}", savedRating.getId());
+        return savedRating;
+    }
 }

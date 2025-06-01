@@ -3,16 +3,14 @@ package com.nnk.poseidon.controllers;
 
 import com.nnk.poseidon.domain.Rating;
 import com.nnk.poseidon.domain.Trade;
+import com.nnk.poseidon.dto.RatingDto;
 import com.nnk.poseidon.services.RatingService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,14 +45,38 @@ public class RatingController {
     }
 
     @GetMapping("/rating/add")
-    public String addRatingForm(Rating rating) {
+    public String addRatingForm(Model model) {
+        log.debug("Affichage du formulaire d'ajout de rating");
+        model.addAttribute("ratingDto", new RatingDto());
+        log.debug("Modèle mis à jour avec un nouveau RatingDto");
         return "rating/add";
     }
 
     @PostMapping("/rating/validate")
-    public String validate(@Valid Rating rating, BindingResult result, Model model) {
-        // TODO: check data valid and save to db, after saving return Rating list
-        return "rating/add";
+    public String validate(@Valid @ModelAttribute("ratingDto") RatingDto ratingDto,
+                           BindingResult result,
+                           Model model) {
+        log.debug("Validation du RatingDto : {}", ratingDto);
+        if (result.hasErrors()) {
+            log.error("Erreur de validation : {}", result.getAllErrors());
+            model.addAttribute("error", "Erreur de validation des données");
+            return "rating/add";
+        }
+        try {
+            Rating rating = new Rating();
+            rating.setMoodysRating(ratingDto.getMoodysRating());
+            rating.setSandPRating(ratingDto.getSandPRating());
+            rating.setFitchRating(ratingDto.getFitchRating());
+            rating.setOrderNumber(ratingDto.getOrderNumber());
+
+            ratingService.saveRating(rating);
+            log.debug("Rating ajouté avec succès : {}", rating);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'ajout du rating : {}", e.getMessage());
+            model.addAttribute("error", "Erreur lors de l'ajout du rating");
+            return "rating/add";
+        }
+        return "redirect:/rating/list";
     }
 
     @GetMapping("/rating/update/{id}")
