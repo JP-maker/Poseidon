@@ -32,4 +32,17 @@ public class RatingService {
         log.debug("Rating saved with ID: {}", savedRating.getId());
         return savedRating;
     }
+
+    @Transactional(readOnly = true)
+    public Rating getRatingById(Integer id) {
+        log.debug("Fetching rating by ID: {}", id);
+        return ratingRepository.findById(id).orElse(null);
+    }
+
+    @Transactional
+    public void deleteRating(Integer id) {
+        log.debug("Deleting rating with ID: {}", id);
+        ratingRepository.deleteById(id);
+        log.debug("Rating with ID: {} deleted successfully", id);
+    }
 }
