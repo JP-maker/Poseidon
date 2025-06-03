@@ -1,153 +1,185 @@
 package com.nnk.poseidon.controllers;
 
-
-import com.nnk.poseidon.domain.Rating;
-import com.nnk.poseidon.domain.Trade;
-import com.nnk.poseidon.dto.RatingDto;
+import com.nnk.poseidon.dto.RatingDTO;
 import com.nnk.poseidon.services.RatingService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes; // Pour les messages flash
 
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Contrôleur pour gérer les opérations CRUD pour les {@link RatingDTO}.
+ * Gère les requêtes web relatives aux notations et interagit avec le {@link RatingService}.
+ */
 @Slf4j
 @Controller
 public class RatingController {
 
     private final RatingService ratingService;
+
+    /**
+     * Construit un nouveau RatingController avec le RatingService donné.
+     * @param ratingService Le service pour la gestion des notations.
+     */
+    @Autowired // Bonne pratique d'ajouter @Autowired sur le constructeur
     public RatingController(RatingService ratingService) {
         this.ratingService = ratingService;
     }
 
-    @RequestMapping("/rating/list")
-    public String home(Model model)
-    {
-        log.debug("Accès à la liste des ratings");
-
-        List<Rating> ratings = Collections.emptyList();
-
+    /**
+     * Affiche la liste de toutes les notations (DTOs).
+     *
+     * @param model Le modèle Spring MVC.
+     * @return Le nom de la vue "rating/list".
+     */
+    @RequestMapping("/rating/list") // Peut aussi être @GetMapping
+    public String home(Model model) {
+        log.info("Requête pour lister tous les DTOs de Rating"); // Log adapté
+        List<RatingDTO> RatingDTOs = Collections.emptyList(); // Initialisation
         try {
-            ratings = ratingService.getAllRatings();
+            RatingDTOs = ratingService.getAllRatings();
+            model.addAttribute("ratings", RatingDTOs); // Le nom dans le modèle est "ratings"
+            log.debug("Nombre de DTOs de rating récupérés : {}", RatingDTOs.size());
         } catch (Exception e) {
-            log.error("Erreur lors de la récupération des ratings : {}", e.getMessage());
-            model.addAttribute("error", "Erreur lors de la récupération des ratings");
+            log.error("Erreur lors de la récupération des DTOs de rating : {}", e.getMessage(), e); // Log de l'exception
+            model.addAttribute("errorMessage", "Erreur lors de la récupération des notations."); // Message pour l'utilisateur
         }
-
-        log.debug("Nombre de ratings récupérés : {}", ratings.size());
-        model.addAttribute("ratings", ratings);
-        log.debug("Modèle mis à jour avec les ratings");
+        log.debug("Modèle mis à jour avec les DTOs de rating");
         return "rating/list";
     }
 
+    /**
+     * Affiche le formulaire pour ajouter une nouvelle notation.
+     *
+     * @param model Le modèle Spring MVC.
+     * @return Le nom de la vue "rating/add".
+     */
     @GetMapping("/rating/add")
-    public String addRatingForm(Model model) {
-        log.debug("Affichage du formulaire d'ajout de rating");
-        model.addAttribute("ratingDto", new RatingDto());
-        log.debug("Modèle mis à jour avec un nouveau RatingDto");
+    public String addRatingForm(Model model) { // Le paramètre RatingDTO est injecté implicitement
+        log.info("Requête pour afficher le formulaire d'ajout d'une notation (DTO)"); // Log adapté
+        model.addAttribute("RatingDTO", new RatingDTO()); // Le nom dans le modèle est "RatingDTO"
+        log.debug("Modèle mis à jour avec un nouveau RatingDTO");
         return "rating/add";
     }
 
+    /**
+     * Valide et sauvegarde une nouvelle notation à partir d'un DTO.
+     *
+     * @param RatingDTO Le {@link RatingDTO} peuplé à partir du formulaire.
+     * @param result Le {@link BindingResult} pour les erreurs de validation.
+     * @param model Le modèle Spring MVC.
+     * @param redirectAttributes Attributs pour la redirection.
+     * @return "rating/add" en cas d'erreur, sinon redirection vers "/rating/list".
+     */
     @PostMapping("/rating/validate")
-    public String validate(@Valid @ModelAttribute("ratingDto") RatingDto ratingDto,
+    public String validate(@Valid @ModelAttribute("RatingDTO") RatingDTO RatingDTO, // Explicite @ModelAttribute
                            BindingResult result,
-                           Model model) {
-        log.debug("Validation du RatingDto : {}", ratingDto);
+                           Model model,
+                           RedirectAttributes redirectAttributes) {
+        log.info("Requête pour valider et sauvegarder un nouveau DTO de notation : {}", RatingDTO); // Log adapté
         if (result.hasErrors()) {
-            log.error("Erreur de validation : {}", result.getAllErrors());
-            model.addAttribute("error", "Erreur de validation des données");
+            log.warn("Erreurs de validation pour le nouveau DTO de notation : {}", result.getAllErrors()); // Log adapté
+            // Pas besoin de model.addAttribute("error"), les erreurs sont dans BindingResult
+            // model.addAttribute("RatingDTO", RatingDTO); // Spring le fait déjà
             return "rating/add";
         }
         try {
-            Rating rating = new Rating();
-            rating.setMoodysRating(ratingDto.getMoodysRating());
-            rating.setSandPRating(ratingDto.getSandPRating());
-            rating.setFitchRating(ratingDto.getFitchRating());
-            rating.setOrderNumber(ratingDto.getOrderNumber());
-
-            ratingService.saveRating(rating);
-            log.debug("Rating ajouté avec succès : {}", rating);
+            ratingService.saveRating(RatingDTO); // Le service gère le mapping
+            log.info("DTO de notation sauvegardé avec succès : {}", RatingDTO.getId()); // Log l'ID si disponible
+            redirectAttributes.addFlashAttribute("successMessage", "Notation ajoutée avec succès !"); // Message flash
+            return "redirect:/rating/list";
         } catch (Exception e) {
-            log.error("Erreur lors de l'ajout du rating : {}", e.getMessage());
-            model.addAttribute("error", "Erreur lors de l'ajout du rating");
+            log.error("Erreur lors de la sauvegarde du DTO de notation : {}", e.getMessage(), e); // Log de l'exception
+            model.addAttribute("errorMessage", "Erreur lors de l'ajout de la notation : " + e.getMessage()); // Message pour l'utilisateur
+            // model.addAttribute("RatingDTO", RatingDTO); // Spring le fait déjà
             return "rating/add";
         }
-        return "redirect:/rating/list";
     }
 
+    /**
+     * Affiche le formulaire de mise à jour pour une notation existante (DTO).
+     *
+     * @param id L'ID de la notation à mettre à jour.
+     * @param model Le modèle Spring MVC.
+     * @param redirectAttributes Attributs pour la redirection.
+     * @return "rating/update" si trouvé, sinon redirection vers "/rating/list".
+     */
     @GetMapping("/rating/update/{id}")
-    public String showUpdateForm(@PathVariable("id") Integer id, Model model) {
-        log.debug("Affichage du formulaire de mise à jour pour le rating avec ID : {}", id);
-        Rating rating = ratingService.getRatingById(id);
-        RatingDto ratingDto = new RatingDto();
-        if (rating != null) {
-            ratingDto.setId(rating.getId());
-            ratingDto.setMoodysRating(rating.getMoodysRating());
-            ratingDto.setSandPRating(rating.getSandPRating());
-            ratingDto.setFitchRating(rating.getFitchRating());
-            ratingDto.setOrderNumber(rating.getOrderNumber());
-        } else {
-            log.error("Rating avec ID {} non trouvé", id);
-            model.addAttribute("error", "Rating non trouvé");
+    public String showUpdateForm(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
+        log.info("Requête pour afficher le formulaire de mise à jour pour le DTO notation id : {}", id); // Log adapté
+        try {
+            RatingDTO RatingDTO = ratingService.getRatingById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Notation (DTO) invalide avec l'Id :" + id));
+            model.addAttribute("RatingDTO", RatingDTO);
+            log.debug("DTO de notation trouvé : {}", RatingDTO);
+        } catch (IllegalArgumentException e) {
+            log.warn("DTO de notation non trouvé pour la mise à jour avec l'id {} : {}", id, e.getMessage()); // Log adapté
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage()); // Message flash
             return "redirect:/rating/list";
         }
-        log.debug("Rating trouvé : {}", rating);
-        model.addAttribute("ratingDto", ratingDto);
-        log.debug("Modèle mis à jour avec le rating pour la mise à jour");
+        log.debug("Modèle mis à jour avec le DTO de notation pour la mise à jour");
         return "rating/update";
     }
 
+    /**
+     * Valide et met à jour une notation existante à partir d'un DTO.
+     *
+     * @param id L'ID de la notation à mettre à jour.
+     * @param RatingDTO Le {@link RatingDTO} peuplé à partir du formulaire.
+     * @param result Le {@link BindingResult} pour les erreurs de validation.
+     * @param model Le modèle Spring MVC.
+     * @param redirectAttributes Attributs pour la redirection.
+     * @return "rating/update" en cas d'erreur, sinon redirection vers "/rating/list".
+     */
     @PostMapping("/rating/update/{id}")
-    public String updateRating(@PathVariable("id") Integer id, @Valid RatingDto ratingDto,
-                             BindingResult result, Model model) {
-        log.debug("Mise à jour du rating avec ID : {}", id);
+    public String updateRating(@PathVariable("id") Integer id,
+                               @Valid @ModelAttribute("RatingDTO") RatingDTO RatingDTO, // Explicite @ModelAttribute
+                               BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+        log.info("Requête pour mettre à jour le DTO notation id {} : {}", id, RatingDTO); // Log adapté
+        RatingDTO.setId(id); // S'assurer que l'ID du DTO est celui du path variable
+
         if (result.hasErrors()) {
-            log.error("Erreur de validation lors de la mise à jour du rating : {}", result.getAllErrors());
-            model.addAttribute("error", "Erreur de validation des données");
-            model.addAttribute("ratingDto", ratingDto);
+            log.warn("Erreurs de validation lors de la mise à jour du DTO notation id {} : {}", id, result.getAllErrors()); // Log adapté
+            // model.addAttribute("RatingDTO", RatingDTO); // Spring le fait déjà
             return "rating/update";
         }
         try {
-            Rating rating = ratingService.getRatingById(ratingDto.getId());
-            if (rating == null) {
-                log.error("Rating avec ID {} non trouvé pour mise à jour", ratingDto.getId());
-                model.addAttribute("error", "Rating non trouvé");
-                return "redirect:/rating/list";
-            }
-            rating.setMoodysRating(ratingDto.getMoodysRating());
-            rating.setSandPRating(ratingDto.getSandPRating());
-            rating.setFitchRating(ratingDto.getFitchRating());
-            rating.setOrderNumber(ratingDto.getOrderNumber());
-            ratingService.saveRating(rating);
-            log.debug("Rating mis à jour avec succès : {}", rating);
-        } catch (Exception e) {
-            log.error("Erreur lors de la mise à jour du rating : {}", e.getMessage());
-            model.addAttribute("error", "Erreur lors de la mise à jour du rating");
+            ratingService.saveRating(RatingDTO); // Le service gère le mapping et la recherche de l'entité existante
+            log.info("DTO de notation mis à jour avec succès : {}", RatingDTO);
+            redirectAttributes.addFlashAttribute("successMessage", "Notation mise à jour avec succès !"); // Message flash
+            return "redirect:/rating/list";
+        } catch (Exception e) { // Attraper une exception plus large ou spécifique si le service en lance
+            log.error("Erreur lors de la mise à jour du DTO de notation id {} : {}", id, e.getMessage(), e); // Log de l'exception
+            model.addAttribute("errorMessage", "Erreur lors de la mise à jour de la notation : " + e.getMessage()); // Message pour l'utilisateur
+            // model.addAttribute("RatingDTO", RatingDTO); // Spring le fait déjà
             return "rating/update";
         }
-        return "redirect:/rating/list";
     }
 
+    /**
+     * Supprime une notation par son ID.
+     *
+     * @param id L'ID de la notation à supprimer.
+     * @param redirectAttributes Attributs pour la redirection.
+     * @return Redirection vers "/rating/list".
+     */
     @GetMapping("/rating/delete/{id}")
-    public String deleteRating(@PathVariable("id") Integer id, Model model) {
-        log.debug("Suppression du rating avec ID : {}", id);
+    public String deleteRating(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) { // Model n'est plus nécessaire
+        log.info("Requête pour supprimer la notation id : {}", id); // Log adapté
         try {
-            Rating rating = ratingService.getRatingById(id);
-            if (rating == null) {
-                log.error("Rating avec ID {} non trouvé pour suppression", id);
-                model.addAttribute("error", "Rating non trouvé");
-                return "redirect:/rating/list";
-            }
-            ratingService.deleteRating(rating.getId()); // Suppression logique, si nécessaire
-            log.debug("Rating supprimé avec succès : {}", rating);
-        } catch (Exception e) {
-            log.error("Erreur lors de la suppression du rating : {}", e.getMessage());
-            model.addAttribute("error", "Erreur lors de la suppression du rating");
-            return "redirect:/rating/list";
+            ratingService.deleteRating(id); // Le service gère la vérification d'existence
+            log.info("Notation supprimée avec succès, id : {}", id);
+            redirectAttributes.addFlashAttribute("successMessage", "Notation supprimée avec succès !"); // Message flash
+        } catch (IllegalArgumentException e) { // Attraper l'exception spécifique du service
+            log.warn("Erreur lors de la suppression de la notation id {} : {}", id, e.getMessage()); // Log adapté
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage()); // Message flash
         }
         return "redirect:/rating/list";
     }

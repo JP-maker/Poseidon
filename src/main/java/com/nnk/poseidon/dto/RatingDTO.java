@@ -3,9 +3,9 @@ package com.nnk.poseidon.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 /**
  * Objet de Transfert de Données (DTO) pour représenter les données d'une notation (Rating).
@@ -16,12 +16,13 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RatingDto {
+public class RatingDTO {
 
     /**
      * L'identifiant unique de la notation.
      * Ce champ est généralement optionnel pour les opérations de création (car il est auto-généré)
      * mais requis pour les opérations de mise à jour ou de récupération.
+     * Il sera renseigné par le service lors de la récupération ou après la création.
      */
     private Integer id;
 
@@ -59,5 +60,5 @@ public class RatingDto {
      */
     @NotNull(message = "Le numéro d'ordre ne peut pas être nul")
     private Integer orderNumber;
-}
 
+}
