@@ -1,12 +1,15 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-      <title>Spring Boot</title>
+      <title>Error Page</title>
+    <link rel="stylesheet" type="text/css" href="../../css/bootstrap.min.css">
 </head>
 <body>
    <h3>Access Denied Exception</h3>
    <div>
-	    Logged in user: <b th:inline="text"  class="user"> [[${#httpServletRequest.remoteUser}]] </b>
+	    Logged in user: <b th:inline="text"  class="user" sec:authentication="principal.username"> </b>
 	    <form th:action="@{/app-logout}" method="POST">
 	         <input type="submit" value="Logout"/>
 	    </form>

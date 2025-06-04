@@ -21,7 +21,7 @@ import java.util.Optional;
  * Utilise {@link UserDTO} pour la communication des données et la validation.
  */
 @Controller
-@RequestMapping("/user") // Mieux de mettre le préfixe de base ici
+@RequestMapping("/user")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);

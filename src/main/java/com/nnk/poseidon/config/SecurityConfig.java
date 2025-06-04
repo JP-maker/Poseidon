@@ -1,48 +1,52 @@
 package com.nnk.poseidon.config;
 
-import com.nnk.poseidon.filter.AutoLoginFilter;
+import com.nnk.poseidon.services.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-// Pas besoin de UserDetailsService ou PasswordEncoder si vous n'avez que l'auto-login
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public AutoLoginFilter autoLoginFilter() {
-        // Vous pouvez rendre le nom d'utilisateur et le rôle configurables (via @Value par exemple)
-        return new AutoLoginFilter("guestUser", "ROLE_GUEST");
-    }
+    private final CustomUserDetailsService userDetailsService;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AutoLoginFilter autoLoginFilter) throws Exception {
-        http
-                .authorizeHttpRequests(authorizeRequests ->
-                        authorizeRequests
-                                .requestMatchers("/*", "/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico").permitAll()
-                                .anyRequest().authenticated() // Toutes les requêtes nécessitent une authentification (qui sera fournie par AutoLoginFilter)
-                )
-                // Ajoutez votre filtre avant le UsernamePasswordAuthenticationFilter (ou un autre filtre pertinent)
-                .addFilterBefore(autoLoginFilter, UsernamePasswordAuthenticationFilter.class)
-                .csrf(csrf -> csrf.disable()); // Désactivez CSRF si vous n'utilisez pas de formulaires soumis par l'utilisateur
-        // ou si ce mode d'auto-login ne le justifie pas.
-
-        // Puisque l'authentification est automatique, le formLogin et httpBasic ne sont plus nécessaires
-        // à moins que vous ne vouliez les garder comme fallback ou pour des admins.
-        http.formLogin(formLogin -> formLogin.disable());
-        http.httpBasic(httpBasic -> httpBasic.disable());
-
-        return http.build();
+    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
     }
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authorizeRequests ->
+                        authorizeRequests
+                                .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
+                                .anyRequest().authenticated() // Toutes les requêtes nécessitent une authentification (qui sera fournie par AutoLoginFilter)
+                )
+                .formLogin(form -> form
+                        .loginPage("/login") // URL de la page de connexion personnalisée
+                        .loginProcessingUrl("/login") // URL où Spring Security traite le formulaire (par défaut)
+                        .defaultSuccessUrl("/home", true) // Rediriger vers /home après succès
+                        .failureUrl("/login?error=true") // Rediriger en cas d'échec
+                        .permitAll() // Autoriser l'accès à la page de login
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout") // URL pour déclencher la déconnexion
+                        .logoutSuccessUrl("/login?logout=true") // Rediriger après déconnexion
+                        .invalidateHttpSession(true) // Invalider la session
+                        .deleteCookies("JSESSIONID") // Supprimer les cookies
+                        .permitAll() // Autoriser l'accès à l'URL de déconnexion
+                )
+                .userDetailsService(userDetailsService); // Utiliser notre service custom pour charger les users
+
+        return http.build();
     }
 }
