@@ -8,10 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -26,6 +23,11 @@ public class BidListController {
 
     private final BidListService bidListService;
 
+    /**
+     * Constructeur pour injecter le service de gestion des offres.
+     *
+     * @param bidListService Le service concret pour gérer les opérations sur les offres.
+     */
     @Autowired
     public BidListController(BidListService bidListService) {
         this.bidListService = bidListService;
@@ -69,11 +71,13 @@ public class BidListController {
      * @return "bidList/add" en cas d'erreur, sinon redirection vers "/bidList/list".
      */
     @PostMapping("/bidList/validate")
-    public String validate(@Valid BidListDTO bidListDTO, BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+    public String validate(@Valid @ModelAttribute("bidList") BidListDTO bidListDTO,
+                           BindingResult result,
+                           Model model,
+                           RedirectAttributes redirectAttributes) {
         log.info("Requête pour valider et sauvegarder un nouveau DTO d'offre : {}", bidListDTO);
         if (result.hasErrors()) {
             log.warn("Erreurs de validation pour le nouveau DTO d'offre : {}", result.getAllErrors());
-            model.addAttribute("bidList", bidListDTO); // Renvoyer le DTO pour afficher les erreurs
             return "bidList/add";
         }
         try {
@@ -123,14 +127,16 @@ public class BidListController {
      * @return "bidList/update" en cas d'erreur, sinon redirection vers "/bidList/list".
      */
     @PostMapping("/bidList/update/{id}")
-    public String updateBid(@PathVariable("id") Integer id, @Valid BidListDTO bidListDTO,
-                            BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+    public String updateBid(@PathVariable("id") Integer id,
+                            @Valid @ModelAttribute("bidList") BidListDTO bidListDTO,
+                            BindingResult result,
+                            Model model,
+                            RedirectAttributes redirectAttributes) {
         log.info("Requête pour mettre à jour le DTO d'offre id {} : {}", id, bidListDTO);
         bidListDTO.setBidListId(id); // S'assurer que l'ID du DTO est celui du path variable
 
         if (result.hasErrors()) {
             log.warn("Erreurs de validation lors de la mise à jour du DTO d'offre id {} : {}", id, result.getAllErrors());
-            model.addAttribute("bidList", bidListDTO); // Renvoyer DTO avec erreurs
             return "bidList/update";
         }
         try {

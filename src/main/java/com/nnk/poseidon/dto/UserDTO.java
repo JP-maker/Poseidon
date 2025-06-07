@@ -1,6 +1,7 @@
 package com.nnk.poseidon.dto; // Créez ce package si nécessaire
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,7 +36,10 @@ public class UserDTO {
      * La validation de la complexité du mot de passe peut être ajoutée ici.
      */
     @NotBlank(message = "Password is mandatory") // Conserver pour l'ajout. Pour la mise à jour, la logique pourrait être différente.
-    @Size(min = 6, max = 125, message = "Password must be between 6 and 125 characters") // Exemple de validation de taille
+    @Pattern(
+            regexp = "^(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}$",
+            message = "Password must be at least 8 characters long and contain at least one number and one special character"
+    )
     private String password;
 
     /**

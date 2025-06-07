@@ -1,8 +1,8 @@
-package com.nnk.poseidon.services; // Assure-toi que ce package existe
+package com.nnk.poseidon.services;
 
 import com.nnk.poseidon.domain.BidList;
 import com.nnk.poseidon.dto.BidListDTO;
-import com.nnk.poseidon.repositories.BidListRepository; // Tu auras besoin de ce repository
+import com.nnk.poseidon.repositories.BidListRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,9 +14,17 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Classe de service pour la gestion des entités {@link BidList}.
- * Gère la logique métier pour les offres (bids) et interagit avec le repository.
- * Opère avec des DTOs pour les échanges avec les couches supérieures.
+ * Service pour la gestion de la logique métier liée aux entités {@link BidList}.
+ * <p>
+ * Cette classe encapsule toute la logique métier pour les offres (bids), y compris les opérations
+ * CRUD, la validation des données et la conversion entre les entités JPA ({@link BidList})
+ * et les Data Transfer Objects ({@link BidListDTO}). Elle agit comme un intermédiaire entre
+ * la couche de contrôleur et la couche de persistance.
+ * </p>
+ *
+ * @see BidListDTO Le DTO utilisé pour les échanges de données.
+ * @see BidList L'entité JPA gérée par ce service.
+ * @see BidListRepository Le repository utilisé pour l'accès aux données.
  */
 @Slf4j
 @Service
@@ -24,12 +32,22 @@ public class BidListService {
 
     private final BidListRepository bidListRepository;
 
+    /**
+     * Constructeur pour l'injection de dépendances.
+     *
+     * @param bidListRepository Le repository pour l'accès aux données des BidList, injecté par Spring.
+     */
     @Autowired
     public BidListService(BidListRepository bidListRepository) {
         this.bidListRepository = bidListRepository;
     }
 
-
+    /**
+     * Méthode utilitaire privée pour convertir une entité {@link BidList} en son DTO {@link BidListDTO}.
+     *
+     * @param bidList L'entité à convertir.
+     * @return Le DTO correspondant, ou {@code null} si l'entité en entrée est nulle.
+     */
     private BidListDTO convertToDTO(BidList bidList) {
         if (bidList == null) {
             return null;
@@ -39,30 +57,37 @@ public class BidListService {
         dto.setAccount(bidList.getAccount());
         dto.setType(bidList.getType());
         dto.setBidQuantity(bidList.getBidQuantity());
-        dto.setCreationDate(bidList.getCreationDate()); // Inclure pour l'affichage
-
+        dto.setCreationDate(bidList.getCreationDate());
         return dto;
     }
 
+    /**
+     * Méthode utilitaire privée pour convertir un {@link BidListDTO} en une nouvelle entité {@link BidList}.
+     * <p>
+     * Note: Cette méthode ne définit que les champs présents dans le DTO. Les champs d'audit
+     * comme {@code creationDate} ou {@code revisionDate} sont gérés dans la méthode {@link #save}.
+     * </p>
+     *
+     * @param bidListDTO Le DTO à convertir.
+     * @return La nouvelle entité JPA (non persistée), ou {@code null} si le DTO en entrée est nul.
+     */
     private BidList convertToEntity(BidListDTO bidListDTO) {
         if (bidListDTO == null) {
             return null;
         }
         BidList entity = new BidList();
-        // L'ID est important pour la mise à jour. S'il est null, c'est une nouvelle entité.
         entity.setBidListId(bidListDTO.getBidListId());
         entity.setAccount(bidListDTO.getAccount());
         entity.setType(bidListDTO.getType());
         entity.setBidQuantity(bidListDTO.getBidQuantity());
-        // Les autres champs de l'entité (askQuantity, bid, ask, etc.) ne sont pas dans ce DTO simple.
-        // La creationDate sera gérée lors de la sauvegarde.
         return entity;
     }
 
-
     /**
-     * Récupère tous les DTOs de BidList.
-     * @return une liste de tous les {@link BidListDTO}.
+     * Récupère toutes les offres (bids) et les convertit en une liste de DTOs.
+     * L'opération est exécutée dans une transaction en lecture seule pour des raisons de performance.
+     *
+     * @return Une liste de {@link BidListDTO}, potentiellement vide si aucune offre n'est trouvée.
      */
     @Transactional(readOnly = true)
     public List<BidListDTO> findAll() {
@@ -73,9 +98,11 @@ public class BidListService {
     }
 
     /**
-     * Récupère un DTO de BidList par son ID.
-     * @param id L'ID du BidList à récupérer.
-     * @return un Optional contenant le {@link BidListDTO} si trouvé, ou un Optional vide sinon.
+     * Recherche une offre par son identifiant unique (ID).
+     *
+     * @param id L'identifiant (clé primaire) de l'offre à rechercher.
+     * @return Un {@link Optional} contenant le {@link BidListDTO} si l'offre est trouvée,
+     *         ou un {@link Optional#empty()} sinon.
      */
     @Transactional(readOnly = true)
     public Optional<BidListDTO> findById(Integer id) {
@@ -88,10 +115,20 @@ public class BidListService {
     }
 
     /**
-     * Sauvegarde un nouveau BidList ou met à jour un existant à partir d'un DTO.
-     * @param bidListDTO Le {@link BidListDTO} contenant les données à sauvegarder.
-     * @return Le {@link BidListDTO} de l'entité sauvegardée.
-     * @throws IllegalArgumentException si le bidListDTO est nul.
+     * Sauvegarde une nouvelle offre ou met à jour une offre existante à partir d'un DTO.
+     * <p>
+     * La méthode distingue deux cas en fonction de la présence de l'ID dans le DTO :
+     * <ul>
+     *     <li><b>Création :</b> Si l'ID est nul, une nouvelle entité est créée et la {@code creationDate} est initialisée.</li>
+     *     <li><b>Mise à jour :</b> Si l'ID est non nul, l'entité existante est récupérée, ses champs sont mis à jour,
+     *     et la {@code revisionDate} est actualisée.</li>
+     * </ul>
+     * L'opération est transactionnelle, garantissant l'atomicité de la sauvegarde.
+     *
+     * @param bidListDTO Le DTO contenant les données de l'offre à sauvegarder. Ne doit pas être nul.
+     * @return Le DTO représentant l'entité sauvegardée, avec son ID mis à jour si c'était une création.
+     * @throws IllegalArgumentException si {@code bidListDTO} est nul, ou si une mise à jour est tentée
+     *                                  pour un ID qui n'existe pas en base de données.
      */
     @Transactional
     public BidListDTO save(BidListDTO bidListDTO) {
@@ -105,8 +142,6 @@ public class BidListService {
             log.info("Création d'un nouveau BidList à partir du DTO : {}", bidListDTO);
             bidListToSave = convertToEntity(bidListDTO);
             bidListToSave.setCreationDate(LocalDateTime.now());
-            // Tu pourrais aussi vouloir initialiser revisionDate, creationName, etc. ici
-            // bidListToSave.setCreationName(getCurrentUsername()); // Exemple si tu as la gestion des utilisateurs
         } else { // Mise à jour
             log.info("Mise à jour du BidList existant avec id {} à partir du DTO : {}", bidListDTO.getBidListId(), bidListDTO);
             BidList existingBidList = bidListRepository.findById(bidListDTO.getBidListId())
@@ -115,13 +150,10 @@ public class BidListService {
                         return new IllegalArgumentException("Mise à jour impossible : BidList non trouvé avec id: " + bidListDTO.getBidListId());
                     });
 
-            // Mettre à jour les champs de l'entité existante à partir du DTO
             existingBidList.setAccount(bidListDTO.getAccount());
             existingBidList.setType(bidListDTO.getType());
             existingBidList.setBidQuantity(bidListDTO.getBidQuantity());
-            existingBidList.setRevisionDate(LocalDateTime.now()); // Mettre à jour la date de révision
-            // existingBidList.setRevisionName(getCurrentUsername()); // Exemple
-            // Les autres champs non présents dans le DTO restent inchangés sur existingBidList.
+            existingBidList.setRevisionDate(LocalDateTime.now());
             bidListToSave = existingBidList;
         }
 
@@ -131,9 +163,11 @@ public class BidListService {
     }
 
     /**
-     * Supprime un BidList par son ID.
-     * @param id L'ID du BidList à supprimer.
-     * @throws IllegalArgumentException si l'ID est nul ou si le BidList avec l'ID donné n'est pas trouvé.
+     * Supprime une offre par son identifiant unique (ID).
+     *
+     * @param id L'identifiant (clé primaire) de l'offre à supprimer.
+     * @throws IllegalArgumentException si l'ID est nul ou si aucune offre avec cet ID n'est trouvée
+     *                                  dans la base de données.
      */
     @Transactional
     public void deleteById(Integer id) {

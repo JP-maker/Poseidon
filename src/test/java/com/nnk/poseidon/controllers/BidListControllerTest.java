@@ -115,7 +115,7 @@ class BidListControllerTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(view().name("bidList/add"))
-                .andExpect(model().attributeHasFieldErrors("bidListDTO", "account")); // Erreur sur 'account'
+                .andExpect(model().attributeHasFieldErrors("bidList", "account")); // Erreur sur 'account'
 
         verify(bidListServiceMock, never()).save(any(BidListDTO.class));
     }
@@ -179,7 +179,7 @@ class BidListControllerTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(view().name("bidList/update"))
-                .andExpect(model().attributeHasFieldErrors("bidListDTO", "account"))
+                .andExpect(model().attributeHasFieldErrors("bidList", "account"))
                 .andExpect(model().attributeExists("bidList"));
 
         verify(bidListServiceMock, never()).save(any(BidListDTO.class));

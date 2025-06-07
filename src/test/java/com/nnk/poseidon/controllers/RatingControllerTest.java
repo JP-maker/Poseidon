@@ -81,8 +81,8 @@ class RatingControllerTest {
 		mockMvc.perform(get("/rating/add"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("rating/add"))
-				.andExpect(model().attributeExists("RatingDTO"))
-				.andExpect(model().attribute("RatingDTO", instanceOf(RatingDTO.class)));
+				.andExpect(model().attributeExists("rating"))
+				.andExpect(model().attribute("rating", instanceOf(RatingDTO.class)));
 	}
 
 	@Test
@@ -116,7 +116,7 @@ class RatingControllerTest {
 				)
 				.andExpect(status().isOk())
 				.andExpect(view().name("rating/add"))
-				.andExpect(model().attributeHasFieldErrors("RatingDTO", "moodysRating"));
+				.andExpect(model().attributeHasFieldErrors("rating", "moodysRating"));
 
 		verify(ratingServiceMock, never()).saveRating(any(RatingDTO.class));
 	}
@@ -146,8 +146,8 @@ class RatingControllerTest {
 		mockMvc.perform(get("/rating/update/1"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("rating/update"))
-				.andExpect(model().attributeExists("RatingDTO"))
-				.andExpect(model().attribute("RatingDTO", RatingDTOTest1));
+				.andExpect(model().attributeExists("rating"))
+				.andExpect(model().attribute("rating", RatingDTOTest1));
 
 		verify(ratingServiceMock, times(1)).getRatingById(1);
 	}
@@ -198,8 +198,8 @@ class RatingControllerTest {
 				)
 				.andExpect(status().isOk())
 				.andExpect(view().name("rating/update"))
-				.andExpect(model().attributeHasFieldErrors("RatingDTO", "moodysRating"))
-				.andExpect(model().attributeExists("RatingDTO"));
+				.andExpect(model().attributeHasFieldErrors("rating", "moodysRating"))
+				.andExpect(model().attributeExists("rating"));
 
 		verify(ratingServiceMock, never()).saveRating(any(RatingDTO.class));
 	}

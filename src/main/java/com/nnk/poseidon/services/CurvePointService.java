@@ -1,9 +1,9 @@
 package com.nnk.poseidon.services;
 
 import com.nnk.poseidon.domain.CurvePoint;
-import com.nnk.poseidon.dto.CurvePointDTO; // Importer le DTO
+import com.nnk.poseidon.dto.CurvePointDTO;
 import com.nnk.poseidon.repositories.CurvePointRepository;
-import lombok.extern.slf4j.Slf4j; // Utilisation de @Slf4j de Lombok
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,27 +14,40 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Classe de service pour la gestion des entités {@link CurvePoint}.
- * Gère la logique métier pour les points de courbe et interagit avec le repository.
- * Opère avec des DTOs pour les échanges avec les couches supérieures (ex: contrôleurs).
+ * Service pour la gestion de la logique métier liée aux entités {@link CurvePoint}.
+ * <p>
+ * Cette classe encapsule toute la logique métier pour les points de courbe, y compris les opérations
+ * CRUD, la validation des données et la conversion entre les entités JPA ({@link CurvePoint})
+ * et les Data Transfer Objects ({@link CurvePointDTO}). Elle agit comme un intermédiaire entre
+ * la couche de contrôleur et la couche de persistance.
+ * </p>
+ *
+ * @see CurvePointDTO Le DTO utilisé pour les échanges de données.
+ * @see CurvePoint L'entité JPA gérée par ce service.
+ * @see CurvePointRepository Le repository utilisé pour l'accès aux données.
  */
 @Slf4j
 @Service
-public class CurvePointService { // Plus d'interface
+public class CurvePointService {
 
     private final CurvePointRepository curvePointRepository;
 
     /**
-     * Construit un nouveau CurvePointService avec le repository donné.
-     * @param curvePointRepository Le repository pour les entités CurvePoint.
+     * Constructeur pour l'injection de dépendances.
+     *
+     * @param curvePointRepository Le repository pour l'accès aux données des CurvePoint, injecté par Spring.
      */
     @Autowired
     public CurvePointService(CurvePointRepository curvePointRepository) {
         this.curvePointRepository = curvePointRepository;
     }
 
-    // --- Méthodes de mapping privées DTO <-> Entité ---
-
+    /**
+     * Méthode utilitaire privée pour convertir une entité {@link CurvePoint} en son DTO {@link CurvePointDTO}.
+     *
+     * @param curvePoint L'entité à convertir.
+     * @return Le DTO correspondant, ou {@code null} si l'entité en entrée est nulle.
+     */
     private CurvePointDTO convertToDTO(CurvePoint curvePoint) {
         if (curvePoint == null) {
             return null;
@@ -49,25 +62,34 @@ public class CurvePointService { // Plus d'interface
         );
     }
 
+    /**
+     * Méthode utilitaire privée pour convertir un {@link CurvePointDTO} en une entité {@link CurvePoint}.
+     * <p>
+     * Note: Cette méthode ne définit que les champs présents dans le DTO. Le champ d'audit
+     * {@code creationDate} est géré dans la méthode {@link #save} lors de la création.
+     * </p>
+     *
+     * @param curvePointDTO Le DTO à convertir.
+     * @return L'entité JPA correspondante, ou {@code null} si le DTO en entrée est nul.
+     */
     private CurvePoint convertToEntity(CurvePointDTO curvePointDTO) {
         if (curvePointDTO == null) {
             return null;
         }
         CurvePoint curvePoint = new CurvePoint();
-        curvePoint.setId(curvePointDTO.getId()); // Important pour la mise à jour
+        curvePoint.setId(curvePointDTO.getId());
         curvePoint.setCurveId(curvePointDTO.getCurveId());
         curvePoint.setAsOfDate(curvePointDTO.getAsOfDate());
         curvePoint.setTerm(curvePointDTO.getTerm());
         curvePoint.setValue(curvePointDTO.getValue());
-        // creationDate n'est pas défini depuis le DTO pour la création/maj,
-        // il sera géré lors de la sauvegarde d'une nouvelle entité.
-        // Si l'entité est existante, sa creationDate sera préservée.
         return curvePoint;
     }
 
     /**
-     * Récupère tous les DTOs de CurvePoint.
-     * @return une liste de tous les {@link CurvePointDTO}.
+     * Récupère tous les points de courbe et les convertit en une liste de DTOs.
+     * L'opération est exécutée dans une transaction en lecture seule pour optimiser les performances.
+     *
+     * @return Une liste de {@link CurvePointDTO}, potentiellement vide si aucun point n'est trouvé.
      */
     @Transactional(readOnly = true)
     public List<CurvePointDTO> findAll() {
@@ -78,9 +100,11 @@ public class CurvePointService { // Plus d'interface
     }
 
     /**
-     * Récupère un DTO de CurvePoint par son ID.
-     * @param id L'ID du CurvePoint à récupérer.
-     * @return un Optional contenant le {@link CurvePointDTO} si trouvé, ou un Optional vide sinon.
+     * Recherche un point de courbe par son identifiant unique (ID).
+     *
+     * @param id L'identifiant (clé primaire) du point à rechercher.
+     * @return Un {@link Optional} contenant le {@link CurvePointDTO} si le point est trouvé,
+     *         ou un {@link Optional#empty()} sinon.
      */
     @Transactional(readOnly = true)
     public Optional<CurvePointDTO> findById(Integer id) {
@@ -93,10 +117,20 @@ public class CurvePointService { // Plus d'interface
     }
 
     /**
-     * Sauvegarde un nouveau CurvePoint ou met à jour un existant à partir d'un DTO.
-     * @param curvePointDTO Le {@link CurvePointDTO} contenant les données à sauvegarder.
-     * @return Le {@link CurvePointDTO} de l'entité sauvegardée.
-     * @throws IllegalArgumentException si le curvePointDTO est nul.
+     * Sauvegarde un nouveau point de courbe ou met à jour un point existant à partir d'un DTO.
+     * <p>
+     * La méthode distingue deux cas en fonction de la présence de l'ID dans le DTO :
+     * <ul>
+     *     <li><b>Création :</b> Si l'ID est nul, une nouvelle entité est créée et la {@code creationDate} est initialisée.</li>
+     *     <li><b>Mise à jour :</b> Si l'ID est non nul, l'entité existante est récupérée et ses champs sont mis à jour.
+     *     La {@code creationDate} originale est préservée.</li>
+     * </ul>
+     * L'opération est transactionnelle, garantissant l'atomicité de la sauvegarde.
+     *
+     * @param curvePointDTO Le DTO contenant les données du point à sauvegarder. Ne doit pas être nul.
+     * @return Le DTO représentant l'entité sauvegardée, avec son ID mis à jour si c'était une création.
+     * @throws IllegalArgumentException si {@code curvePointDTO} est nul, ou si une mise à jour est tentée
+     *                                  pour un ID qui n'existe pas en base de données.
      */
     @Transactional
     public CurvePointDTO save(CurvePointDTO curvePointDTO) {
@@ -106,23 +140,22 @@ public class CurvePointService { // Plus d'interface
         }
 
         CurvePoint curvePointToSave;
-        if (curvePointDTO.getId() == null) { // Création d'une nouvelle entité
+        if (curvePointDTO.getId() == null) { // Création
             log.info("Création d'un nouveau CurvePoint à partir du DTO : {}", curvePointDTO);
             curvePointToSave = convertToEntity(curvePointDTO);
-            curvePointToSave.setCreationDate(LocalDateTime.now()); // Définir la date de création
-        } else { // Mise à jour d'une entité existante
+            curvePointToSave.setCreationDate(LocalDateTime.now());
+        } else { // Mise à jour
             log.info("Mise à jour du CurvePoint existant avec id {} à partir du DTO : {}", curvePointDTO.getId(), curvePointDTO);
             CurvePoint existingCurvePoint = curvePointRepository.findById(curvePointDTO.getId())
                     .orElseThrow(() -> {
                         log.warn("CurvePoint non trouvé pour la mise à jour avec id : {}", curvePointDTO.getId());
                         return new IllegalArgumentException("Mise à jour impossible : CurvePoint non trouvé avec id: " + curvePointDTO.getId());
                     });
-            // Mettre à jour les champs de l'entité existante à partir du DTO
+
             existingCurvePoint.setCurveId(curvePointDTO.getCurveId());
             existingCurvePoint.setAsOfDate(curvePointDTO.getAsOfDate());
             existingCurvePoint.setTerm(curvePointDTO.getTerm());
             existingCurvePoint.setValue(curvePointDTO.getValue());
-            // La creationDate de existingCurvePoint est préservée
             curvePointToSave = existingCurvePoint;
         }
 
@@ -132,9 +165,11 @@ public class CurvePointService { // Plus d'interface
     }
 
     /**
-     * Supprime un CurvePoint par son ID.
-     * @param id L'ID du CurvePoint à supprimer.
-     * @throws IllegalArgumentException si l'ID est nul ou si le CurvePoint avec l'ID donné n'est pas trouvé.
+     * Supprime un point de courbe par son identifiant unique (ID).
+     *
+     * @param id L'identifiant (clé primaire) du point à supprimer.
+     * @throws IllegalArgumentException si l'ID est nul ou si aucun point avec cet ID n'est trouvé
+     *                                  dans la base de données.
      */
     @Transactional
     public void deleteById(Integer id) {

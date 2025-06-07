@@ -23,6 +23,11 @@ public class RuleNameController {
 
     private final RuleNameService ruleNameService;
 
+    /**
+     * Constructeur pour injecter le service de gestion des règles.
+     *
+     * @param ruleNameService Le service concret pour gérer les opérations sur les règles.
+     */
     @Autowired
     public RuleNameController(RuleNameService ruleNameService) {
         this.ruleNameService = ruleNameService;

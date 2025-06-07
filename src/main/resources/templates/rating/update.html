@@ -14,7 +14,7 @@
 	</div>
 
 	<div class="row">
-		<form action="#" th:action="@{/rating/update/{id}(id=${ratingDto.id})}" th:object="${ratingDto}" method="post" class="form-horizontal" style="width: 100%">
+		<form action="#" th:action="@{/rating/update/{id}(id=${rating.id})}" th:object="${rating}" method="post" class="form-horizontal" style="width: 100%">
 			<div class="form-group">
 				<label for="moodysRating" class="col-sm-2 control-label">MoodysRating</label>
 				<div class="col-sm-10">
@@ -39,7 +39,7 @@
 			<div class="form-group">
 				<label for="orderNumber" class="col-sm-2 control-label">Order</label>
 				<div class="col-sm-10">
-					<input type="text" th:field="*{orderNumber}" id="orderNumber" placeholder="FitchRating" class="col-4">
+					<input type="text" th:field="*{orderNumber}" id="orderNumber" placeholder="Order number" class="col-4">
 					<p class="text-danger" th:if="${#fields.hasErrors('orderNumber')}" th:errors="*{orderNumber}"></p>
 				</div>
 			</div>

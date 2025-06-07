@@ -104,7 +104,7 @@ class CurveControllerTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(view().name("curvePoint/add"))
-                .andExpect(model().attributeHasFieldErrors("curvePointDTO", "term")); // Vérifier l'erreur sur 'term'
+                .andExpect(model().attributeHasFieldErrors("curvePoint", "term")); // Vérifier l'erreur sur 'term'
 
         verify(curvePointServiceMock, never()).save(any(CurvePointDTO.class));
     }
@@ -172,7 +172,7 @@ class CurveControllerTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(view().name("curvePoint/update"))
-                .andExpect(model().attributeHasFieldErrors("curvePointDTO", "term"))
+                .andExpect(model().attributeHasFieldErrors("curvePoint", "term"))
                 .andExpect(model().attributeExists("curvePoint"));
 
         verify(curvePointServiceMock, never()).save(any(CurvePointDTO.class));
@@ -180,7 +180,8 @@ class CurveControllerTest {
 
     @Test
     void testUpdateBid_siIdNonTrouvePendantSauvegarde_devraitRetournerVueMiseAJourAvecErreur() throws Exception {
-        CurvePointDTO dtoNonExistant = new CurvePointDTO(99, 10, LocalDateTime.now(), 1.5, 105.0, null);
+        LocalDateTime asOfDate = LocalDateTime.now();
+        CurvePointDTO dtoNonExistant = new CurvePointDTO(99, 10, asOfDate, 1.5, 105.0, null);
 
         when(curvePointServiceMock.save(any(CurvePointDTO.class)))
                 .thenThrow(new IllegalArgumentException("Mise à jour impossible : CurvePoint non trouvé avec id: " + dtoNonExistant.getId()));
@@ -188,7 +189,7 @@ class CurveControllerTest {
         mockMvc.perform(post("/curvePoint/update/99")
                         .param("id", "99")
                         .param("curveId", "10")
-                        .param("asOfDate", LocalDateTime.now().toString())
+                        .param("asOfDate", asOfDate.toString())
                         .param("term", "1.5")
                         .param("value", "105.0")
                         .flashAttr("curvePointDTO", dtoNonExistant))

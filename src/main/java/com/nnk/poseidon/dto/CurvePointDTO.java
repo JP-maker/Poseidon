@@ -1,38 +1,77 @@
-package com.nnk.poseidon.dto; // Création d'un sous-package dto
+package com.nnk.poseidon.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import com.nnk.poseidon.domain.CurvePoint; // Import pour la référence Javadoc
 
 import java.time.LocalDateTime;
 
 /**
- * DTO (Data Transfer Object) pour l'entité CurvePoint.
- * Utilisé pour transférer des données entre les couches, notamment pour les formulaires et la validation.
+ * DTO (Data Transfer Object) pour l'entité {@link CurvePoint}.
+ * <p>
+ * Cet objet sert de contrat de données pour les formulaires de création et de mise à jour
+ * des points de courbe. Il encapsule les données saisies par l'utilisateur et applique
+ * des règles de validation spécifiques via les annotations de Jakarta Bean Validation avant
+ * que les données ne soient traitées par la couche service.
+ * </p>
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class CurvePointDTO {
 
-    private Integer id; // Peut être null pour la création
+    /**
+     * L'identifiant unique du point de courbe.
+     * Utilisé pour la mise à jour d'un point existant. Il est nul lors de la création.
+     */
+    private Integer id;
 
-    @NotNull(message = "L'ID de la courbe ne peut pas être nul.")
+    /**
+     * L'identifiant de la courbe parente à laquelle ce point est rattaché.
+     * Ce champ est obligatoire et sa valeur doit être un entier positif.
+     */
+    @NotNull(message = "Curve ID cannot be null.")
+    @Min(value = 1, message = "Curve ID must be a positive number.")
     private Integer curveId;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) // Aide Spring à parser la date/heure du formulaire
-    private LocalDateTime asOfDate; // La validation de date peut être plus complexe (@Future, @Past, etc.)
+    /**
+     * La date de validité des données du point ("as of date").
+     * <p>
+     * Indique à quel moment la {@code value} est considérée comme exacte pour le {@code term} donné.
+     * L'annotation {@link DateTimeFormat} aide Spring MVC à convertir correctement la chaîne de caractères
+     * provenant du formulaire en objet {@link LocalDateTime}.
+     * </p>
+     */
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime asOfDate;
 
-    @NotNull(message = "Le terme ne peut pas être nul.")
-    @PositiveOrZero(message = "Le terme doit être positif ou zéro.")
+    /**
+     * Le terme (ou la maturité) du point sur la courbe, généralement exprimé en années (ex: 0.5 pour 6 mois).
+     * Représente l'axe des abscisses (X) de la courbe. Ce champ est obligatoire et doit être positif ou nul.
+     */
+    @NotNull(message = "Term cannot be null.")
+    @PositiveOrZero(message = "Term must be zero or positive.")
     private Double term;
 
-    @NotNull(message = "La valeur ne peut pas être nulle.")
+    /**
+     * La valeur du point de courbe pour le terme correspondant (ex: un taux d'intérêt).
+     * Représente l'axe des ordonnées (Y) de la courbe. Ce champ est obligatoire.
+     */
+    @NotNull(message = "Value cannot be null.")
     private Double value;
 
-    private LocalDateTime creationDate; // Pour l'affichage, pas pour la saisie
+    /**
+     * La date de création de l'enregistrement.
+     * <p>
+     * Ce champ est destiné à un usage en lecture seule (affichage) et n'est pas rempli par
+     * l'utilisateur dans le formulaire. Sa valeur est gérée par la couche de service ou la base de données.
+     * </p>
+     */
+    private LocalDateTime creationDate;
 
 }

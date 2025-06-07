@@ -8,10 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -26,6 +23,11 @@ public class CurveController {
 
     private final CurvePointService curvePointService; // Injection du service concret
 
+    /**
+     * Constructeur pour injecter le service de gestion des points de courbe.
+     *
+     * @param curvePointService Le service concret pour gérer les opérations sur les points de courbe.
+     */
     @Autowired
     public CurveController(CurvePointService curvePointService) {
         this.curvePointService = curvePointService;
@@ -69,11 +71,13 @@ public class CurveController {
      * @return "curvePoint/add" en cas d'erreur, sinon redirection vers "/curvePoint/list".
      */
     @PostMapping("/curvePoint/validate")
-    public String validate(@Valid CurvePointDTO curvePointDTO, BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+    public String validate(@Valid @ModelAttribute("curvePoint") CurvePointDTO curvePointDTO,
+                           BindingResult result,
+                           Model model,
+                           RedirectAttributes redirectAttributes) {
         log.info("Requête pour valider et sauvegarder un nouveau DTO de point de courbe : {}", curvePointDTO);
         if (result.hasErrors()) {
             log.warn("Erreurs de validation pour le nouveau DTO de point de courbe : {}", result.getAllErrors());
-            model.addAttribute("curvePoint", curvePointDTO); // Renvoyer le DTO pour afficher les erreurs
             return "curvePoint/add";
         }
         try {
@@ -83,7 +87,6 @@ public class CurveController {
             return "redirect:/curvePoint/list";
         } catch (Exception e) {
             log.error("Erreur lors de la sauvegarde du DTO de point de courbe : {}", e.getMessage(), e);
-            model.addAttribute("curvePoint", curvePointDTO);
             model.addAttribute("errorMessage", "Erreur lors de la sauvegarde : " + e.getMessage());
             return "curvePoint/add";
         }
@@ -123,8 +126,11 @@ public class CurveController {
      * @return "curvePoint/update" en cas d'erreur, sinon redirection vers "/curvePoint/list".
      */
     @PostMapping("/curvePoint/update/{id}")
-    public String updateBid(@PathVariable("id") Integer id, @Valid CurvePointDTO curvePointDTO,
-                            BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+    public String updateBid(@PathVariable("id") Integer id,
+                            @Valid @ModelAttribute("curvePoint") CurvePointDTO curvePointDTO,
+                            BindingResult result,
+                            Model model,
+                            RedirectAttributes redirectAttributes) {
         log.info("Requête pour mettre à jour le DTO point de courbe id {} : {}", id, curvePointDTO);
         curvePointDTO.setId(id); // S'assurer que l'ID du DTO est celui du path variable
 

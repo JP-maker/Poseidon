@@ -31,8 +31,8 @@ public class RatingDTO {
      * Ce champ est obligatoire et ne doit pas être vide (blank).
      * Sa longueur est limitée à 125 caractères.
      */
-    @NotBlank(message = "La note Moody's ne peut pas être vide")
-    @Size(max = 125, message = "La note Moody's doit comporter au maximum 125 caractères")
+    @NotBlank(message = "Moody's rating cannot be empty")
+    @Size(max = 125, message = "Moody's rating must be at most 125 characters")
     private String moodysRating;
 
     /**
@@ -40,8 +40,8 @@ public class RatingDTO {
      * Ce champ est obligatoire et ne doit pas être vide (blank).
      * Sa longueur est limitée à 125 caractères.
      */
-    @NotBlank(message = "La note S&P ne peut pas être vide")
-    @Size(max = 125, message = "La note S&P doit comporter au maximum 125 caractères")
+    @NotBlank(message = "S&P rating cannot be empty")
+    @Size(max = 125, message = "S&P rating must be at most 125 characters")
     private String sandPRating;
 
     /**
@@ -49,8 +49,8 @@ public class RatingDTO {
      * Ce champ est obligatoire et ne doit pas être vide (blank).
      * Sa longueur est limitée à 125 caractères.
      */
-    @NotBlank(message = "La note Fitch ne peut pas être vide")
-    @Size(max = 125, message = "La note Fitch doit comporter au maximum 125 caractères")
+    @NotBlank(message = "Fitch rating cannot be empty")
+    @Size(max = 125, message = "Fitch rating must be at most 125 characters")
     private String fitchRating;
 
     /**
@@ -58,7 +58,7 @@ public class RatingDTO {
      * Ce champ est obligatoire et ne doit pas être nul.
      * Dans la base de données, cela pourrait être représenté par un {@code tinyint}.
      */
-    @NotNull(message = "Le numéro d'ordre ne peut pas être nul")
+    @NotNull(message = "Order number cannot be null")
     private Integer orderNumber;
 
 }

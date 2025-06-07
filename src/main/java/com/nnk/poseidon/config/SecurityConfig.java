@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
+                                .requestMatchers("/user/**").hasAuthority("ADMIN")
                                 .anyRequest().authenticated() // Toutes les requêtes nécessitent une authentification (qui sera fournie par AutoLoginFilter)
                 )
                 .formLogin(form -> form
